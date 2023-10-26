@@ -2,7 +2,7 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open('pwa-cache-v1').then((cache) => {
             return cache.addAll([
-                '/',
+                '/PnL_Calculator',
                 'index.html',
                 // Include other files you want to cache here
             ]);
