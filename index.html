@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Options Profit/Loss Calculator</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            padding: 10px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .trade {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        label {
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 5px;
+            margin: 5px 0;
+        }
+        .position-label {
+            margin-right: 5px;
+        }
+        #trades {
+            text-align: center;
+        }
+        #controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+        #graph {
+            margin-top: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .trade {
+                width: 50%;
+                display: inline-block;
+                margin-right: 10px;
+            }
+            .trade:nth-child(odd) {
+                clear: both;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Options Profit/Loss Calculator</h1>
+
+    <div id="trades">
+        <div class="trade">
+            <label for="tradeType">Trade Type:</label>
+            <select class="tradeType">
+                <option value="call">Call Option</option>
+                <option value="put">Put Option</option>
+                <option value="future">Futures</option>
+            </select>
+            <br>
+            <label class="position-label" for="position">Position:</label>
+            <select class="position">
+                <option value="buy">Buy</option>
+                <option value="sell">Sell</option>
+            </select>
+            <br>
+            <label for="stockPrice">Stock Price:</label>
+            <input type="number" class="stockPrice" value="100">
+            <br>
+            <label for="strikePrice">Strike Price:</label>
+            <input type="number" class="strikePrice" value="105">
+            <br>
+            <label for="premium">Option Premium/Futures Price:</label>
+            <input type="number" class="premium" value="3">
+            <br>
+            <label for="quantity">Contract Quantity:</label>
+            <input type="number" class="quantity" value="1">
+            <br>
+            <button onclick="removeTrade(this)">Remove Trade</button>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button onclick="addTrade()">Add Trade</button>
+        <button onclick="calculateNetPnL()">Calculate</button>
+    </div>
+    
+    <div id="graph"></div>
+
+    <script>
+        function addTrade() {
+            const trades = document.getElementById('trades');
+            const trade = document.querySelector('.trade').cloneNode(true);
+            trades.appendChild(trade);
+        }
+
+        function removeTrade(button) {
+            const trade = button.parentElement;
+            trade.remove();
+        }
+
+        function calculateNetPnL() {
+            const trades = document.querySelectorAll('.trade');
+            const x = [];
+            const netPnL = [];
+
+            trades.forEach(trade => {
+                const tradeType = trade.querySelector('.tradeType').value;
+                const position = trade.querySelector('.position').value;
+                const stockPrice = parseFloat(trade.querySelector('.stockPrice').value);
+                const strikePrice = parseFloat(trade.querySelector('.strikePrice').value);
+                const premium = parseFloat(trade.querySelector('.premium').value);
+                const quantity = parseInt(trade.querySelector('.quantity').value);
+
+                for (let i = 80; i <= 130; i++) {
+                    x.push(i);
+                    let profit = 0;
+
+                    if (tradeType === "call") {
+                        if (position === "buy") {
+                            profit = (Math.max(0, i - strikePrice) - premium) * quantity;
+                        } else if (position === "sell") {
+                            profit = -(Math.max(0, i - strikePrice) - premium) * quantity;
+                        }
+                    } else if (tradeType === "put") {
+                        if (position === "buy") {
+                            profit = (Math.max(0, strikePrice - i) - premium) * quantity;
+                        } else if (position === "sell") {
+                            profit = -(Math.max(0, strikePrice - i) - premium) * quantity;
+                        }
+                    } else if (tradeType === "future") {
+                        if (position === "buy") {
+                            profit = (i - premium) * quantity;
+                        } else if (position === "sell") {
+                            profit = -(i - premium) * quantity;
+                        }
+                    }
+
+                    if (!netPnL[i - 80]) {
+                        netPnL[i - 80] = profit;
+                    } else {
+                        netPnL[i - 80] += profit;
+                    }
+                }
+            });
+
+            const data = [{
+                x: x,
+                y: netPnL,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Net P/L'
+            }];
+
+            const layout = {
+                title: 'Options Net P/L',
+                xaxis: {
+                    title: 'Stock Price'
+                },
+                yaxis: {
+                    title: 'Net Profit/Loss'
+                }
+            };
+
+            Plotly.newPlot('graph', data, layout);
+        }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then((registration) => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+</body>
+</html>
